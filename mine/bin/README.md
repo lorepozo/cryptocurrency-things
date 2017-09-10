@@ -1,4 +1,4 @@
-# Mining
+# scripts for miners
 
 For these scripts to work, binaries for
 [ccminer](https://github.com/tpruvot/ccminer),
@@ -9,15 +9,22 @@ same directory as the scripts.
 Be sure to set your appropriate BTC address (and other constants, if
 applicable) in each of these scripts.
 
-### Benchmarking
+### mining
+
+The [`./gpu`](./gpu) script mines the most profitable algorithm. You'll need
+to set the constants defined at the top of the script, which can come from
+the benchmarking script. The [`./cpu`](./cpu) script just mines cryptonight.
+
+### benchmarking
 
 The gpu benchmarking script [`./gpu-benchmark`](./gpu-benchmark) directs
 miner output to `./tmp`, which you should manually check to determine your
 hashing speed when setting your rates for mining.
 
-### `nh-profit`
+### profitability
 
-This checks your profitability on nicehash.
+The [`./nh-profit`](./nh-profit) script checks your profitability on
+nicehash:
 ```sh
 # (this example address isn't mine)
 $ nh-profit -a 37aArqRtuUj9znKD1LkSekjpnyJ9AeDhqs

@@ -62,12 +62,12 @@ $ zr
 {"time":"2017-04-03 13:03:18","amount":2.1481052,"memo":"make it all private!","address":"zcAXJxTcq1ewPwDq4wDYVEChrP5jLWWVJwADVL6AwVPUtTHThWPFh8a3RQdbQJm7BhFzcWPzzwuq1JjtjAurGbRVsbAxobL"}
 ```
 
-### ccsummary
+### market summaries
 
-This script shows a summary of values according the market. See
-configurability by looking for the `XXX` comments in the code (three
-statements may need to be adjusted by you). There are three ways of using
-it directly:
+The script `ccsummary` shows a summary of your values according to the
+current market. See configurability by looking for the `XXX` comments in the
+code (three statements may need to be adjusted by you). There are three ways
+of using it directly:
 
 ```sh
 # get a simple JSON document with usd values of your holdings
