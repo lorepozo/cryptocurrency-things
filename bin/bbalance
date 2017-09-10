@@ -1,0 +1,41 @@
+#!/bin/sh
+# REQUIRES jq (https://stedolan.github.io/jq)
+#
+# This program, bbalance, gets your bitcoin addresses and their balances.
+#
+#
+# Copyright 2017  Lucas Morales <lucas@lucasem.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# donations welcome!
+#  btc:1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+#  zec:t1YNLtZAQ59mzjYbFy1RfLjkkk4T967cSCn
+
+
+unspent () {
+  bitcoin-cli listunspent | jq -r '.[] | .address' | sort -u | while read address
+  do
+    sum=`bitcoin-cli listunspent | jq -r '.[] | "\(.address) \(.amount)"' | grep "^$address " | cut -d' ' -f2 | tr '\n' '+' | head -c-2`
+    amount=`bc <<< "$sum"`
+    echo "$amount $address"
+  done
+}
+
+all () {
+  bitcoin-cli listreceivedbyaddress 0 true  | jq -r '.[] | "0 \(.address)"'
+}
+
+prettybalances () {
+  while read line
+  do
+    bal=$( echo $line | cut -d' ' -f1)
+    addr=$(echo $line | cut -d' ' -f2)
+    echo $(printf %.8f $bal) $addr
+  done
+}
+
+(unspent ; all) | sort -u -k2 | sort -g | prettybalances

@@ -1,0 +1,52 @@
+#!/bin/sh
+# REQUIRES jq (https://stedolan.github.io/jq)
+#
+# This program, zbalance, gets your zcash addresses (taddr and zaddr) and their balances.
+#
+#
+# Copyright 2017  Lucas Morales <lucas@lucasem.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# donations welcome!
+#  btc:1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+#  zec:t1YNLtZAQ59mzjYbFy1RfLjkkk4T967cSCn
+
+zaddr_withbalance () {
+  while read a
+  do echo $(zcash-cli z_getbalance $a) $a
+  done
+}
+
+taddr_withbalance () {
+  unspent=$(zcash-cli listunspent | jq -r '.[] | "\(.amount) \(.address)"')
+  while read a
+  do
+    row=$(echo $unspent | grep " $a\$")
+    if test $? -eq 0
+    then echo $row
+    else echo 0 $a
+    fi
+  done
+}
+
+getbalances () {
+  ( zcash-cli listreceivedbyaddress 0 true  | jq -r '.[] | .address' ; \
+    zcash-cli listunspent | jq -r '.[] | .address' ) \
+    | sort -u | taddr_withbalance
+  zcash-cli z_listaddresses | jq -r '.[]' | zaddr_withbalance
+}
+
+prettybalances () {
+  while read line
+  do
+    bal=$( echo $line | cut -d' ' -f1)
+    addr=$(echo $line | cut -d' ' -f2)
+    echo $(printf %.8f $bal) $addr
+  done
+}
+
+getbalances | prettybalances

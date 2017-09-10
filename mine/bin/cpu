@@ -1,0 +1,34 @@
+#!/bin/sh
+# REQUIRES ./cpuminer (https://github.com/JayDDee/cpuminer-opt)
+#
+#
+# Copyright 2017  Lucas Morales <lucas@lucasem.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# donations welcome!
+#  btc:1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+#  zec:t1YNLtZAQ59mzjYbFy1RfLjkkk4T967cSCn
+
+
+BTC_ADDR=1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+
+cd $( dirname ${BASH_SOURCE[0]} )
+
+while true
+do
+  ./cpuminer \
+             --url "stratum+tcp://cryptonight.usa.nicehash.com:3355" \
+             --algo "cryptonight" --threads 4 --cpu-priority 2 \
+             --user "$BTC_ADDR.cpu" \
+             --quiet --hide-diff $@ &
+  CPUMINER_PID=$!
+  sleep 3570
+  kill $CPUMINER_PID
+
+  echo taking a short break
+  sleep 30
+done

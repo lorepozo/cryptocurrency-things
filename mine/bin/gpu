@@ -1,0 +1,139 @@
+#!/usr/bin/env python
+# gpu: profitability-based gpu-mining via nicehash
+# REQUIRES ./ccminer (https://github.com/tpruvot/ccminer)
+#      AND ./eqm (https://github.com/nicehash/nheqminer)
+#
+#
+# Copyright 2017  Lucas Morales <lucas@lucasem.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# donations welcome!
+#  btc:1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+#  zec:t1YNLtZAQ59mzjYbFy1RfLjkkk4T967cSCn
+
+import subprocess, psutil, requests
+from time import sleep
+from os.path import dirname, realpath
+
+#######################
+###### constants ######
+#######################
+
+default = "equihash"
+region = "usa"
+btc_addr = "1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD"
+my_rates = {
+    "scrypt":           0, # (MH/s)
+    "sha256":           0, # (TH/s)
+    "scryptnf":         0, # (MH/s)
+    "x11":           23.1, # (MH/s)
+    "x13":           18.2, # (MH/s)
+    "keccak":        1130, # (MH/s)
+    "x15":           16.5, # (MH/s)
+    "nist5":         78.5, # (MH/s)
+    "neoscrypt":        0, # (MH/s)
+    "lyra2re":       10.2, # (MH/s)
+    "whirlpoolx":     150, # (MH/s)
+    "qubit":         33.5, # (MH/s)
+    "quark":         36.7, # (MH/s)
+    "axiom":            0, # (kH/s)
+    "lyra2rev2":     63.7, # (MH/s)
+    "scryptjanenf16":   0, # (kH/s)
+    "blake256r8":       0, # (GH/s)
+    "blake256r14":      0, # (GH/s)
+    "blake256r8vnl":    0, # (GH/s)
+    "hodl":             0, # (kH/s)
+    "daggerhashimoto":  0, # (MH/s)
+    "decred":           0, # (GH/s)
+    "cryptonight":      0, # (kH/s)
+    "lbry":          0.51, # (GH/s)
+    "equihash": 640/10**6, # (MSol/s)
+    "pascal":           0, # (GH/s)
+    "x11gost":         16, # (MH/s)
+    "sia":              0, # (GH/s)
+    "blake2s":        7.4, # (GH/s)
+    "skunk":            0, # (MH/s)
+}
+
+######################
+######## body ########
+######################
+
+def most_profitable():
+    try:
+        algs = requests.get("https://api.nicehash.com/api?method=simplemultialgo.info").json()["result"]["simplemultialgo"]
+        profitability = lambda alg: float(alg["paying"]) * my_rates[alg["name"]]
+        return max(algs, key=profitability)["name"]
+    except:
+        return default
+
+algos = { # algo -> (ccminer_name, port)
+    "scrypt":          ("scrypt",      3333),
+    "sha256":          ("sha256d",     3334),
+    "scryptnf":        (None,          3335),
+    "x11":             ("x11",         3336),
+    "x13":             ("x13",         3337),
+    "keccak":          ("keccak",      3338),
+    "x15":             ("x15",         3339),
+    "nist5":           ("nist5",       3340),
+    "neoscrypt":       ("neoscrypt",   3341),
+    "lyra2re":         ("lyra2",       3342),
+    "whirlpoolx":      (None,          3343),
+    "qubit":           ("qubit",       3344),
+    "quark":           ("quark",       3345),
+    "axiom":           (None,          3346),
+    "lyra2rev2":       ("lyra2v2",     3347),
+    "scryptjanenf16":  ("scrypt-jane", 3348),
+    "blake256r8":      ("blakecoin",   3349),
+    "blake256r14":     ("blake",       3350),
+    "blake256r8vnl":   ("vanilla",     3351),
+    "hodl":            (None,          3352),
+    "daggerhashimoto": (None,          3353),
+    "decred":          ("decred",      3354),
+    "cryptonight":     ("cryptonight", 3355),
+    "lbry":            ("lbry",        3356),
+    "equihash":        ("equihash",    3357),
+    "pascal":          (None,          3358),
+    "x11gost":         ("sib",         3359),
+    "sia":             ("sia",         3360),
+    "blake2s":         ("blake2s",     3361),
+}
+
+
+current=(None,None,None) # algo, pid, bin
+while True:
+    algo = most_profitable()
+    if algo == current[0] or algos[algo][0] == "FAIL":
+        print(f"========== no algo change ({algo}) ==========")
+        sleep(60)
+        continue
+
+    print("\n\n")
+    print("=======================================")
+    print(f"switching from {current[0]} to {algo}")
+    print("=======================================")
+    print("\n\n")
+    if current[1]:
+        for proc in psutil.process_iter():
+            if proc.name() == current[2]:
+                proc.kill()
+
+    devices = "0"
+    if algo == "blakecoin":
+        devices = "0,0"
+    
+    if algo in {"equihash"}:
+        p = subprocess.Popen([f"{dirname(realpath(__file__))}/eqm", "-l", region, "-t", "0", "-u", btc_addr, "-w", "gpu", "-ca", "-ca"])
+        current = (algo, p.pid, "eqm")
+    else:
+        p = subprocess.Popen([f"{dirname(realpath(__file__))}/ccminer",
+            "--url", f"stratum+tcp://{algo}.{region}.nicehash.com:{algos[algo][1]}",
+            "--user", f"{btc_addr}.gpu",
+            "--algo", algos[algo][0], "--devices", devices,
+            "--quiet", "--hide-diff"])
+        current = (algo, p.pid, "ccminer")
+    sleep(300)

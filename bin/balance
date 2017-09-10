@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# This program, balance, gets your addresses and their balances for bitcoin,
+# litecoin, and zcash.
+#
+#
+# Copyright 2017  Lucas Morales <lucas@lucasem.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# donations welcome!
+#  btc:1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+#  zec:t1YNLtZAQ59mzjYbFy1RfLjkkk4T967cSCn
+
+bsum=`bbalance | cut -d' ' -f1 | tr '\n' '+' | head -c-2`
+bt=`bc <<< $bsum`
+lsum=`lbalance | cut -d' ' -f1 | tr '\n' '+' | head -c-2`
+lt=`bc <<< $lsum`
+zsum=`zbalance | cut -d' ' -f1 | tr '\n' '+' | head -c-2`
+zt=`bc <<< $zsum`
+
+echo BITCOIN: $bt
+bbalance
+echo
+echo LITECOIN: $lt
+lbalance
+echo
+echo ZCASH: $zt
+zbalance

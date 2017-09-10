@@ -1,0 +1,50 @@
+#!/bin/sh
+# REQUIRES jq (https://stedolan.github.io/jq)
+#
+# This program, zr, lists received transactions for zcash.
+#
+#
+# Copyright 2017  Lucas Morales <lucas@lucasem.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# donations welcome!
+#  btc:1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+#  zec:t1YNLtZAQ59mzjYbFy1RfLjkkk4T967cSCn
+
+export PATH="/home/lucasem/bin:$PATH"
+
+t_each () {
+  while read tx
+  do zcash-cli gettransaction $tx | jq -c \
+    '(.time | gmtime | strftime("%F %T")) as $time | .details[] | {$time, amount, memo:null, address}'
+  done
+}
+
+t () {
+  ( zcash-cli listreceivedbyaddress | jq -r '.[] | .txids | .[]' ; \
+    zcash-cli listunspent | jq -r '.[] | .txid' ) \
+    | sort -u | t_each
+}
+
+z_each () {
+  zaddr=$1
+  while read info
+  do
+    tx=`echo $info | jq -r '.txid'`
+    t=`zcash-cli gettransaction $tx | jq '.time | gmtime | strftime("%Y-%m-%d %H:%M:%S")'`
+    m=`echo $info | jq -r '.memo' | sed 's/0*$//' | xxd -r -p`
+    echo $info | jq -c '{time:'"$t"', amount, memo:"'"$m"'", address:"'"$zaddr"'"}'
+  done
+}
+
+z () {
+  zbalance | grep ' z' | cut -d' ' -f2 | while read zaddr
+  do zcash-cli z_listreceivedbyaddress $zaddr | jq -c '.[]' | z_each $zaddr
+  done
+}
+
+(t ; z) | sort | jq -c .

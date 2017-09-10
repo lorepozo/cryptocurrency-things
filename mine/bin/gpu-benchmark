@@ -1,0 +1,63 @@
+#!/bin/bash
+# gpu-benchmark: benchmark gpu hashing algorithms for one minute each, outputs to ./tmp
+# REQUIRES ./ccminer (https://github.com/tpruvot/ccminer)
+#      AND ./eqm (https://github.com/nicehash/nheqminer)
+#
+#
+# Copyright 2017  Lucas Morales <lucas@lucasem.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# donations welcome!
+#  btc:1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+#  zec:t1YNLtZAQ59mzjYbFy1RfLjkkk4T967cSCn
+
+BTC_ADDR=1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
+
+algos=( scrypt sha256 scryptnf x11 x13 keccak x15 nist5 neoscrypt lyra2re whirlpoolx qubit quark axiom lyra2rev2 scryptjanenf16 blake256r8 blake256r14 blake256r8vnl hodl daggerhashimoto decred cryptonight lbry equihash pascal x11gost sia blake2s skunk )
+algo_ports=( 3333 3334 3335 3336 3337 3338 3339 3340 3341 3342 3343 3344 3345 3346 3347 3348 3349 3350 3351 3352 3353 3354 3355 3356 3357 3358 3359 3360 3361 3362 )
+
+algo_names=( scrypt sha256d FAIL x11 x13 keccak x15 nist5 neoscrypt lyra2 FAIL qubit quark FAIL lyra2v2 scrypt-jane blakecoin blake vanilla FAIL FAIL decred cryptonight lbry equihash FAIL sib FAIL blake2s FAIL )
+
+start_at="" # XXX: set this to skip to a particular algo, e.g. "lbry"
+for i in ${!algo_names[@]}
+do
+  algo=${algos[$i]}
+  port=${algo_ports[$i]}
+  name=${algo_names[$i]}
+  if [ -n "$start_at" ]; then if [ "$algo" = "$start_at" ]; then start_at=""; else continue; fi; fi
+  if [ "$name" = "FAIL" -o "$name" = "WORTHLESS" ]
+  then continue
+  fi
+
+  case "$name" in
+    blakecoin ) 
+      devices=0,0 
+      ;;
+    * )
+      devices=0
+      ;;
+  esac
+
+  case "$algo" in
+    equihash )
+      (./eqm -l usa -t 0 -u $BTC_ADDR -w gpu -ca -ca >> tmp) &
+      sleep 60
+      killall -9 eqm
+      ;;
+    * )
+      (./ccminer --user "$BTC_ADDR.gpu" --devices "$devices" --algo "$algo" --url "stratum+tcp://$name.usa.nicehash.com:$port" $@ >> tmp) &
+      sleep 60
+      killall -9 ccminer
+      ;;
+  esac
+  cat >> tmp <<EOF
+
+  DONE BENCHMARKING $algo
+
+
+EOF
+done
