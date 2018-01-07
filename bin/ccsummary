@@ -4,23 +4,16 @@
 # cryptocurrencies.
 #
 #
-# Copyright 2017  Lucas Morales <lucas@lucasem.com>
+# Copyright 2017-2018  Lucas Morales <lucas@lucasem.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-#
-# donations welcome!
-#  btc:1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
-#  zec:t1YNLtZAQ59mzjYbFy1RfLjkkk4T967cSCn
 
 # look for XXX for things you will want to change!
 
-##############
-### async  ###
-##############
-# (non-async (and unused, and very readable) implementation is at the bottom)
+# requires aiohttp library
 
 import sys
 import asyncio, aiohttp, json
@@ -28,7 +21,7 @@ from datetime import datetime
 loop = asyncio.get_event_loop()
 
 # creates {cc: amt} of amount owned in each cryptocurrency.
-async def own():
+async def own(jsonreq):
     # used for async command execution where we store output.
     class FutureProtocol(asyncio.SubprocessProtocol):
         def __init__(self, exit_future):
@@ -55,100 +48,91 @@ async def own():
         pairs = (l.strip().split() for l in lines)
         return sum(float(amt) for amt, addr in pairs if addr not in exclude)
 
+    # calls ebalance to get erc20 token balance.
+    async def erc20(token, exclude=set()):
+        exit_fut = asyncio.Future()
+        create_fut = loop.subprocess_exec(lambda: FutureProtocol(exit_fut), "ebalance", token, stdin=None, stderr=None)
+        transport, protocol = await create_fut
+        await exit_fut
+        transport.close() # make sure pipe is flushed
+        output = bytes(protocol.output).decode('ascii')
+        lines = output.splitlines()
+        pairs = (l.strip().split() for l in lines)
+        return sum(float(amt) for amt, addr in pairs if addr not in exclude)
+
+    # gets balances for an ark address by asking a node
+    async def ark(addr):
+        resp = await jsonreq(f"http://node1.arknet.cloud:4001/api/accounts?address={addr}")
+        return float(resp["account"]["unconfirmedBalance"])/10**8
+
+    # gets balances for a stellar address by asking a node
+    async def stellar(addr):
+        resp = await jsonreq(f"https://horizon.stellar.org/accounts/{addr}", content_type="application/hal+json")
+        return sum(float(x["balance"]) for x in resp["balances"])
+
     # XXX (the following two statements)
-    b, l, z = await asyncio.gather(*map(asyncio.ensure_future, [
+    b, l, z, e, a, s, o = await asyncio.gather(*map(asyncio.ensure_future, [
             balcmd("bbalance"),
             balcmd("lbalance"),
-            balcmd("zbalance", exclude={"zcaNaoquXzHU11hfH3wcFtFfTs3r3paeZNipAqtNMbtVZ2rnNo5cj13uy3jyJdcTMvcg5XETrvAS6TctHeaCRN8reTQZ77p"})
+            balcmd("zbalance", exclude={"zcaNaoquXzHU11hfH3wcFtFfTs3r3paeZNipAqtNMbtVZ2rnNo5cj13uy3jyJdcTMvcg5XETrvAS6TctHeaCRN8reTQZ77p"}),
+            balcmd("ebalance"),
+            ark("AN4LfFfKNgdeiMUHJsyTrtc7YBC9CneGFU"),
+            stellar("GCK7WP2LCJUSYNY3SSRVYIMD6OLTDYFCHFTFJOHT7AWMXQKXARHTWHUV")
+            erc20("omg")
         ]))
     return {
         "btc": b,
         "ltc": l,
         "zec": z,
-        "bch": 1.68396028,
-        "eth": 30.57802442,
+        "eth": e,
+        "ark": a,
+        "xlm": s,
+        "omg": o,
+        "bch": 0.221153,
     }
 
-# creates {cc: value} of the USD market price of each given cryptocurrency
-# according to the market with the most volume.
-async def prices(ccs):
-    async with aiohttp.ClientSession() as session:
-        async def jsonreq(url):
-            async with session.get(url) as resp:
-                return await resp.json()
-        p = await jsonreq("https://api.cryptowat.ch/markets/summaries")
-        summaries = p["result"].items() # {(cc, {price: {last}, volume})}
-        return { cc: max(
-                (x[1] for x in summaries if x[0].endswith(f"{cc}usd")),
-                key=lambda mkt: mkt["volume"]
-            )["price"]["last"] for cc in ccs }
+# creates {cc: value} of the USD market price of each given cryptocurrency.
+async def prices(ccs, jsonreq):
+    ccs = [cc.upper() for cc in ccs]
+    summaries = await jsonreq("https://api.coinmarketcap.com/v1/ticker/?limit=100")
+    summaries = [x for x in summaries if x["symbol"] in ccs]
+    def summary(cc):
+        for summary in summaries:
+            if summary["symbol"] == cc:
+                return summary
+        raise ValueError(f"no summary for {cc}")
+    return { cc.lower(): float(summary(cc)["price_usd"]) for cc in ccs }
 
 async def main():
-    ccs = ["btc", "bch", "ltc", "zec", "eth"] # XXX
-    amts, prcs = await asyncio.gather(*map(asyncio.ensure_future, [own(), prices(ccs)]))
-    n = {}
-    for cc in ccs:
-        n[cc] = amts[cc]*prcs[cc]
-
-    if len(sys.argv) > 1 and sys.argv[1] == "j":
-        obj = { "time": datetime.now().isoformat(" ", "seconds"),
-                "data": {cc: {
-                    "amount": amts[cc],
-                    "price": prcs[cc],
-                    "as_usd": n[cc],
-                } for cc in ccs},
-              }
-        print(json.dumps(obj))
-    elif len(sys.argv) > 1 and sys.argv[1] == "p":
-        lines = [datetime.now().isoformat(" ", "seconds")]
+    async with aiohttp.ClientSession() as session:
+        async def jsonreq(url, content_type="application/json"):
+            async with session.get(url) as resp:
+                return await resp.json(content_type=content_type)
+        ccs = ["btc", "bch", "ltc", "zec", "eth", "ark", "req", "xlm", "xrb", "btg", "knc", "omg"] # XXX
+        amts, prcs = await asyncio.gather(*map(asyncio.ensure_future, [own(jsonreq), prices(ccs, jsonreq)]))
+        n = {}
         for cc in ccs:
-            left = f"{amts[cc]:.8f}".rjust(13)
-            price = f"${prcs[cc]:.2f}".rjust(8)
-            lines.append(f"{left} {cc.upper()} {price} -> ${amts[cc]*prcs[cc]:.2f}")
-        lines.append(f"  ${sum(n.values()):.2f}")
-        print("\n".join(lines))
-    else:
-        print(json.dumps({cc: round(n[cc], 2) for cc in ccs}, indent=2))
+            n[cc] = amts[cc]*prcs[cc]
+
+        if len(sys.argv) > 1 and sys.argv[1] == "j":
+            obj = { "time": datetime.now().isoformat(" ", "seconds"),
+                    "data": {cc: {
+                        "amount": amts[cc],
+                        "price": prcs[cc],
+                        "as_usd": n[cc],
+                    } for cc in ccs},
+                  }
+            print(json.dumps(obj))
+        elif len(sys.argv) > 1 and sys.argv[1] == "p":
+            lines = [datetime.now().isoformat(" ", "seconds")]
+            for cc in sorted(ccs, key=lambda cc: -n[cc]):
+                left = f"{amts[cc]:.8f}".rjust(13)
+                name = f"{cc.upper()}".ljust(4)
+                price = f"${prcs[cc]:.2f}".rjust(9)
+                lines.append(f"{left} {name} {price} -> ${n[cc]:.2f}")
+            lines.append(f"  ${sum(n.values()):.2f}")
+            print("\n".join(lines))
+        else:
+            print(json.dumps({cc: round(n[cc], 2) for cc in ccs}, indent=2))
 
 loop.run_until_complete(main())
-exit(0)
-
-
-#################
-### non-async ###
-#################
-
-
-import os, requests, json
-
-# calls balance command (e.g. bbalance) and produces total
-b = lambda cmd: sum(map(lambda x: float(x.split()[0]), os.popen(cmd).read().splitlines()))
-# same as above, but filters each tuple of (amt, addr)
-bf = lambda cmd, f: sum(map(lambda tup: float(tup[0]), filter(f, map(lambda x: x.split(), os.popen(cmd).read().splitlines()))))
-
-# returns dict of crypto_name -> amount: float (in units of that cryptocurrency)
-own = lambda: {
-        "btc": b("bbalance"),
-        "ltc": b("lbalance"),
-        "zec": bf("zbalance",
-            lambda tup: "zcaNaoquXzHU11hfH3wcFtFfTs3r3paeZNipAqtNMbtVZ2rnNo5cj13uy3jyJdcTMvcg5XETrvAS6TctHeaCRN8reTQZ77p"
-            not in tup[1] # exclude one of my addresses
-        ),
-        "bch": 1.68396028,
-        "eth": 30.57802442,
-    }
-
-
-# returns the usd markets {exchange, route} for crypto_name
-markets = lambda cc: filter(lambda mkt: mkt['active'], requests.get(f"https://api.cryptowat.ch/pairs/{cc}usd").json()["result"]["markets"])
-
-# gets the summary {price: {last}, volume} for a given market
-market_summary = lambda mkt: requests.get(f"{mkt['route']}/summary").json()["result"]
-
-# usd price of crypto_name in market with most volume
-price = lambda cc: max(map(market_summary, markets(cc)), key=lambda smry:smry["volume"])["price"]["last"]
-
-# returns dict of crypto_name -> amount: float (in usd)
-usd_own = lambda: {cc: round(price(cc)*amt,2) for cc, amt in own().items()}
-
-print(json.dumps(usd_own(), indent=2))
