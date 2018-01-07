@@ -1,0 +1,55 @@
+#!/bin/sh
+# REQUIRES jq (https://stedolan.github.io/jq)
+#
+# This program, ebalance, gets your ethereum addresses and their balances.
+# With a TOKEN argument, it gets corresponding ERC20 token assets.
+#
+#
+# Copyright 2017-2018  Lucas Morales <lucas@lucasem.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+remote () {
+  echo -n "" # for assets not stored locally
+}
+
+here () {
+  here_addr=`geth attach --exec eth.coinbase | jq -r .`
+  here=`geth attach --exec 'web3.fromWei(eth.getBalance(eth.coinbase), "ether")'`
+  echo "$here $here_addr"
+}
+
+prettybalances () {
+  while read line
+  do
+    bal=$( echo $line | cut -d' ' -f1)
+    addr=$(echo $line | cut -d' ' -f2)
+    echo $(printf %.8f $bal) $addr
+  done
+}
+
+if [ -z "$1" ]
+then (remote ; here) | sort -u -k2 | sort -g | prettybalances
+else
+  erc20="[{'name':'balanceOf',
+           'type':'function',
+           'constant':true,
+           'inputs':[{'name':'_owner','type':'address'}],
+           'outputs':[{'name':'balance','type':'uint256'}],
+           'payable':false}]"
+  token=`echo $1 | tr '[:upper:]' '[:lower:]'`
+  case $token in
+    knc) contract='"0xdd974d5c2e2928dea5f71b9825b8b646686bd200"' ;;
+    omg) contract='"0xd26114cd6EE289AccF82350c8d8487fedB8A0C07"' ;;
+    req) contract='"0x8f8221afbb33998d8584a2b05749ba73c37a938a"' ;;
+    *) >&2 echo "unknown erc20 token" ; exit
+  esac
+  geth attach --exec "web3.eth.contract($erc20).at($contract).balanceOf.call(
+                        eth.coinbase, function (err, bal) {
+                          if (err) { console.error(err) }
+                          else { console.log(web3.fromWei(bal, 'ether')) }
+                        })" | head -n 1
+fi
