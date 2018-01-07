@@ -6,10 +6,11 @@ All of these scripts require running a node of some kind.
 
 ### balance
 
-There are four balance commands, one each for bitcoin, litecoin, zcash, and
-all three. Each of these require the corresponding nodes to be running
-locally (so commands to each cli should work). The per-currency commands,
-`bbalance`, `lbalance`, and `zbalance`, take form at follows:
+There are five balance commands, one each for bitcoin, litecoin, ethereum,
+zcash, and all four. Each of these require the corresponding nodes to be
+running locally (so commands to each cli should work). The per-currency
+commands, `bbalance`, `lbalance`, `ebalance`, and `zbalance`, take form at
+follows:
 
 ```sh
 $ bbalance
@@ -34,6 +35,9 @@ BITCOIN: 1.73920142
 
 LITECOIN: 11.00751980
 11.00751980 LQm1rLT3WzW38d8Udj4ntErV5mRgEqJk5U
+
+ETHEREUM: 2.01532351
+2.01532351 0xe81E250b08b6A0527ebda13EfB252Fa901A2e67a
 
 ZCASH: 9.19730801
 0.00000000 t1bc3Z5V4nskqNQvJt24GnsPRWkS2yAE4aY
