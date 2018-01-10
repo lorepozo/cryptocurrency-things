@@ -1,0 +1,38 @@
+# Contributor: Lucas Morales <lucas@lucasem.com>
+
+pkgname=litecoin
+pkgver=0.14.2
+pkgrel=1
+pkgdesc="Litecoin  with litecoind, litecoin-cli, and litecoin-tx"
+arch=('i686' 'x86_64')
+url="http://www.litecoin.org/"
+license=('MIT')
+depends=('gcc-libs' 'miniupnpc' 'openssl' 'protobuf')
+makedepends=('pkg-config' 'git' 'boost-libs' 'boost' 'gcc' 'make' 'automake' 'autoconf' 'libtool')
+source=('git://github.com/litecoin-project/litecoin.git')
+sha256sums=('SKIP')
+provides=('litecoind' 'litecoin-cli' 'litecoin-tx')
+conflicts=('litecoind' 'litecoin-cli' 'litecoin-tx')
+
+build() {
+  cd "$srcdir/${pkgname}"
+
+  ./autogen.sh
+  ./configure \
+    --prefix=/usr \
+    --with-gui=no \
+    --with-gnu-ld \
+    --disable-maintainer-mode \
+    --enable-reduce-exports \
+    --with-incompatible-bdb \
+    --without-libs \
+    --disable-bench \
+    --disable-tests
+  make -j$(nproc)
+}
+
+package() {
+  cd "$srcdir/${pkgname}"
+
+  make DESTDIR="$pkgdir" install
+}

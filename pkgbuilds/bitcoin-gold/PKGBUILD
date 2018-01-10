@@ -1,0 +1,50 @@
+# Contributor: Lucas Morales <lucas@lucasem.com>
+
+pkgname=bitcoin-gold
+_gitname=BTCGPU
+_gitbranch=0.15
+pkgver=0.15.0.2
+pkgrel=1
+pkgdesc="Bitcoin Gold"
+arch=('i686' 'x86_64')
+url="https://bitcoingold.org"
+depends=('boost-libs' 'libevent' 'openssl' 'zeromq')
+makedepends=('boost')
+optdepends=('miniupnpc: build with support for UPnP')
+license=('MIT')
+source=(git://github.com/BTCGPU/BTCGPU.git 'boost-1.66.patch')
+sha256sums=('SKIP' 'f7e7ae675f759f37098d45ece14bca38fe52036c0a313a02f5e941893ae29a5d')
+provides=('bgoldd')
+conflicts=('bgoldd')
+
+prepare() {
+  cd "$srcdir/${_gitname}"
+  git checkout ${_gitbranch}
+  patch -Np1 -i ../boost-1.66.patch
+}
+
+build() {
+  cd "$srcdir/${_gitname}"
+
+  ./autogen.sh
+  ./configure \
+    --prefix=/usr \
+    --enable-hardening \
+    --with-gui=no \
+    --with-gnu-ld \
+    --disable-maintainer-mode \
+    --enable-reduce-exports \
+    --with-incompatible-bdb \
+    --without-utils \
+    --without-libs \
+    --without-seeder \
+    --disable-bench \
+    --disable-tests
+  make -j$(nproc)
+}
+
+package() {
+  cd "$srcdir/${_gitname}"
+
+  make DESTDIR="$pkgdir" install
+}

@@ -6,3 +6,5 @@ and mining setups.
 See [`./bin`](./bin) for scripts on managing assets.
 
 See [`./mine/bin`](./mine/bin) for scripts related to mining.
+
+See [`./pkgbuilds`](./pkgbuilds) for convenient automated build procedures for some nodes.

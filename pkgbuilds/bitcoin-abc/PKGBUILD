@@ -1,0 +1,43 @@
+# Contributor: Lucas Morales <lucas@lucasem.com>
+
+pkgname=bitcoin-abc
+pkgver=0.16.2
+pkgrel=1
+pkgdesc="Bitcoin ABC  with abc-bitcoind, abc-bitcoin-tx, and abc-bitcoin-cli"
+arch=('i686' 'x86_64')
+url="https://bitcoinabc.org"
+depends=('boost-libs' 'libevent' 'openssl' 'zeromq')
+makedepends=('boost')
+optdepends=('miniupnpc: build with support for UPnP')
+license=('MIT')
+source=(git://github.com/Bitcoin-ABC/bitcoin-abc.git)
+sha256sums=('SKIP')
+provides=('abc-bitcoin-cli')
+conflicts=('abc-bitcoin-cli')
+
+build() {
+  cd "$srcdir/${pkgname}"
+
+  ./autogen.sh
+  ./configure \
+    --prefix=/usr \
+    --program-prefix=abc- \
+    --enable-hardening \
+    --with-gui=no \
+    --with-gnu-ld \
+    --disable-maintainer-mode \
+    --enable-reduce-exports \
+    --with-incompatible-bdb \
+    --without-utils \
+    --without-libs \
+    --without-seeder \
+    --disable-bench \
+    --disable-tests
+  make -j$(nproc)
+}
+
+package() {
+  cd "$srcdir/${pkgname}"
+
+  make DESTDIR="$pkgdir" install
+}
