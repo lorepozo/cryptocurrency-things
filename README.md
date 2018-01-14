@@ -5,6 +5,10 @@ and mining setups.
 
 See [`./bin`](./bin) for scripts on managing assets.
 
-See [`./mine/bin`](./mine/bin) for scripts related to mining.
+See [`./mine`](./mine) for scripts related to mining.
 
 See [`./pkgbuilds`](./pkgbuilds) for convenient automated build procedures for some nodes.
+
+Did you find anything here useful? Donate!
+- BTC/BCH: 17LUCASJ3GzbFZptbSiYxSv2Hf8mPieYvE
+- ZEC: zcAXJxTcq1ewPwDq4wDYVEChrP5jLWWVJwADVL6AwVPUtTHThWPFh8a3RQdbQJm7BhFzcWPzzwuq1JjtjAurGbRVsbAxobL

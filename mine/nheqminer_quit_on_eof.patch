@@ -1,0 +1,50 @@
+From: Lucas Morales <lucas@lucasem.com>
+Date: Mon, 11 Dec 2017 00:15:04 -0500
+Subject: [PATCH] quit_on_eof
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f906675..b4fa7aa 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11") #  -Wall
+ option(USE_CPU_TROMP "USE CPU_TROMP" OFF)
+ option(USE_CUDA_TROMP "USE CUDA_TROMP" OFF)
+ #### faster
+-option(USE_CPU_XENONCAT "USE CPU_XENONCAT" ON)
++option(USE_CPU_XENONCAT "USE CPU_XENONCAT" OFF)
+ option(USE_CUDA_DJEZO "USE CUDA_DJEZO" ON)
+ 
+ ## Add solvers here
+diff --git a/nheqminer/libstratum/StratumClient.cpp b/nheqminer/libstratum/StratumClient.cpp
+index 165f1a0..eeecd8c 100644
+--- a/nheqminer/libstratum/StratumClient.cpp
++++ b/nheqminer/libstratum/StratumClient.cpp
+@@ -93,7 +93,12 @@ void StratumClient<Miner, Job, Solution>::workLoop()
+                 connect();
+ 
+             }
+-            read_until(m_socket, m_responseBuffer, "\n");
++            try {
++              read_until(m_socket, m_responseBuffer, "\n");
++            } catch (std::exception const& _e) {
++              exit(1);
++              return;
++            }
+             std::istream is(&m_responseBuffer);
+             std::string response;
+             getline(is, response);
+diff --git a/nheqminer/libstratum/ZcashStratum.cpp b/nheqminer/libstratum/ZcashStratum.cpp
+index 7eac719..d921539 100644
+--- a/nheqminer/libstratum/ZcashStratum.cpp
++++ b/nheqminer/libstratum/ZcashStratum.cpp
+@@ -517,7 +517,7 @@ ZcashJob* ZcashMiner::parseJob(const Array& params)
+         ret->time = params[5].get_str();
+         ret->clean = params[7].get_bool();
+     } else {
+-        throw std::logic_error("ZcashMiner::parseJob(): Invalid or unsupported block header version");
++        BOOST_LOG_TRIVIAL(error) << "ZcashMiner::parseJob(): Invalid or unsupported block header version " << ret->header.nVersion;
+     }
+ 
+     ret->header.nNonce = nonce1;
+-- 
+2.15.1
+

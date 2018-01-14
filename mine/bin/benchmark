@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # gpu-benchmark: benchmark gpu hashing algorithms for three minutes each
 # REQUIRES ./ccminer (https://github.com/tpruvot/ccminer)
-#      AND ./eqm (https://github.com/nicehash/nheqminer)
+#      AND ./eqm (https://github.com/nicehash/nheqminer) WITH quit_on_eof PATCH!
 #
 #
 # Copyright 2017-2018  Lucas Morales <lucas@lucasem.com>
@@ -20,64 +20,64 @@ HERE = dirname(realpath(__file__))
 ###### constants ######
 #######################
 
-# XXX set these
-btc_addr = "1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD"
-start = 0 # index into algos, defined below
+# XXX: set these
+coin, addr = "BTC", "17LUCASJ3GzbFZptbSiYxSv2Hf8mPieYvE"
 
 ######################
 ######## body ########
 ######################
 
-algos = [ # (zpool_algo, ccminer_name, port, doubleup, hashrate)
-    ("bitcore", "bitcore", 3556, False, 28),
-    ("blake2s", "blake2s", 5766, False, 7300),
-    ("blakecoin", "blakecoin", 5743, True, 9980),
-    ("c11", "c11", 3573, False, 24.75),
-    ("equihash", "equihash", 2142, True, 0.62), # kS
-    ("groestl", "groestl", 5333, False, 59),
-    ("keccak", "keccak", 5133, False, 1350),
-    ("lbry", "lbry", 3334, False, 480),
-    ("lyra2v2", "lyra2v2", 4533, True, 40),
-    ("lyra2z", "lyra2z", 4553, False, 2.83),
-    ("myr-gr", "myr-gr", 5433, False, 111),
-    ("neoscrypt", "neoscrypt", 4233, False, 1.36),
-    ("nist5", "nist5", 3833, False, 73),
-    ("phi", "phi", 8333, False, 32.85),
-    ("polytimos", "polytimos", 8463, False, 31.8),
-    ("quark", "quark", 4033, False, 39.6),
-    ("qubit", "qubit", 4733, False, 32),
-    ("sib", "sib", 5033, False, 18.22),
-    ("skein", "skein", 4933, False, 669),
-    ("skunk", "skunk", 8433, False, 53.7),
-    ("timetravel", "timetravel", 3555, False, 50),
-    ("tribus", "tribus", 8533, False, 105.4),
-    ("veltor", "veltor", 5034, False, 57),
-    ("x11evo", "x11evo", 3553, False, 22.2),
-    ("x11", "x11", 3533, False, 23),
-    ("x13", "x13", 3633, False, 18.4),
-    ("x14", "x14", 3933, False, 18),
-    ("x17", "x17", 3737, False, 16.4),
+algos = [ # (zpool_algo, ccminer_name, port, doubleup)
+    ("bitcore", "bitcore", 3556, False),
+    ("blake2s", "blake2s", 5766, False),
+    ("blakecoin", "blakecoin", 5743, True),
+    ("c11", "c11", 3573, False),
+    ("equihash", "equihash", 2142, True),
+    ("groestl", "groestl", 5333, False),
+    ("keccak", "keccak", 5133, False),
+    ("lbry", "lbry", 3334, False),
+    ("lyra2v2", "lyra2v2", 4533, True),
+    ("lyra2z", "lyra2z", 4553, False),
+    ("myr-gr", "myr-gr", 5433, False),
+    ("neoscrypt", "neoscrypt", 4233, False),
+    ("nist5", "nist5", 3833, False),
+    ("phi", "phi", 8333, False),
+    ("polytimos", "polytimos", 8463, False),
+    ("quark", "quark", 4033, False),
+    ("qubit", "qubit", 4733, False),
+    ("sib", "sib", 5033, False),
+    ("skein", "skein", 4933, False),
+    ("skunk", "skunk", 8433, False),
+    ("timetravel", "timetravel", 3555, False),
+    ("tribus", "tribus", 8533, False),
+    ("veltor", "veltor", 5034, False),
+    ("x11evo", "x11evo", 3553, False),
+    ("x11", "x11", 3533, False),
+    ("x13", "x13", 3633, False),
+    ("x14", "x14", 3933, False),
+    ("x17", "x17", 3737, False),
 ]
+start = 0
 
 
 with open('tmp', 'w') as out:
     print("output will be saved in ./tmp. To view, use")
     print("$ less -R ./tmp")
     for i in range(start, len(algos)):
-        zalg, calg, port, doubleup, hashrate = algos[i]
-        print(f"mining {calg}")
+        zalg, calg, port, doubleup = algos[i]
+        out.write(f"\n\n{'='*18}\n    mining {calg}\n{'='*18}\n\n")
     
         devices = "0,0" if doubleup else "0"
         if zalg == "equihash":
             p = subprocess.Popen([f"{HERE}/eqm",
                 "-l", "equihash.mine.zpool.ca:2142",
-                "-t", "0", "-u", btc_addr,
+                "-t", "0", "-u", addr, "-p", f"c={coin}",
                 "-cv", "0", "-cd", "0", "0"],
                 stdout=out)
         else:
             p = subprocess.Popen([f"{HERE}/ccminer",
                 "--url", f"stratum+tcp://{zalg}.mine.zpool.ca:{port}",
-                "--user", f"{btc_addr}", "--pass", "c=BTC",
+                "--user", addr, "--pass", f"c={coin}",
                 "--algo", calg, "--devices", devices,
                 "--gpu-clock", "1700", "--mem-clock", "11000", "--plimit", "375W"],
                 stdout=out)

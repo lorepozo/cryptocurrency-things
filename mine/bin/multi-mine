@@ -2,12 +2,15 @@
 
 cd $( dirname ${BASH_SOURCE[0]} )
 
-BTC_ADDR=1FfJLQaArZmyfSULPXcDXJobGghf3PRqYD
-P="c=BTC,\
+# XXX: set these and the hashrates below
+COIN=BTC ADDR=17LUCASJ3GzbFZptbSiYxSv2Hf8mPieYvE
+
+P="c=$COIN,\
 bitcore=28,\
 blake2s=7.3,\
 blakecoin=10,\
 c11=24.75,\
+equihash=0.65,\
 groestl=59,\
 keccak=1.385,\
 lbry=480,\
@@ -36,45 +39,47 @@ x17=16.4"
 
 while true
 do
-  ./ccminer -a bitcore    -b 4066 -p $P      -d 0 -o stratum+tcp://bitcore.mine.zpool.ca:3556     -q -u $BTC_ADDR -r 0 &
+  d=2047
+  ./eqm -a 4065 -l equihash.mine.zpool.ca:2142 -t 0 -u $ADDR -p $P,d=$d -cv 0 -cd 0 0 &
+  ./ccminer -a bitcore    -b 4066 -p $P      -d 0 -o stratum+tcp://bitcore.mine.zpool.ca:3556     -q -u $ADDR -r 0 &
   d=54
-  ./ccminer -a blake2s    -b 4067 -p $P,d=$d -d 0 -o stratum+tcp://blake2s.mine.zpool.ca:5766     -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a blake2s    -b 4067 -p $P,d=$d -d 0 -o stratum+tcp://blake2s.mine.zpool.ca:5766     -q -u $ADDR -r 0 &
   d=32
-  ./ccminer -a blakecoin  -b 4068 -p $P,d=$d -d 0,0 -o stratum+tcp://blakecoin.mine.zpool.ca:5743 -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a c11        -b 4069 -p $P      -d 0 -o stratum+tcp://c11.mine.zpool.ca:3573         -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a groestl    -b 4070 -p $P      -d 0 -o stratum+tcp://groestl.mine.zpool.ca:5333     -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a blakecoin  -b 4068 -p $P,d=$d -d 0,0 -o stratum+tcp://blakecoin.mine.zpool.ca:5743 -q -u $ADDR -r 0 &
+  ./ccminer -a c11        -b 4069 -p $P      -d 0 -o stratum+tcp://c11.mine.zpool.ca:3573         -q -u $ADDR -r 0 &
+  ./ccminer -a groestl    -b 4070 -p $P      -d 0 -o stratum+tcp://groestl.mine.zpool.ca:5333     -q -u $ADDR -r 0 &
   d=24
-  ./ccminer -a keccak     -b 4071 -p $P,d=$d -d 0 -o stratum+tcp://keccak.mine.zpool.ca:5133      -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a lbry       -b 4072 -p $P      -d 0 -o stratum+tcp://lbry.mine.zpool.ca:3334        -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a keccak     -b 4071 -p $P,d=$d -d 0 -o stratum+tcp://keccak.mine.zpool.ca:5133      -q -u $ADDR -r 0 &
+  ./ccminer -a lbry       -b 4072 -p $P      -d 0 -o stratum+tcp://lbry.mine.zpool.ca:3334        -q -u $ADDR -r 0 &
   d=96
-  ./ccminer -a lyra2v2    -b 4073 -p $P,d=$d -d 0 -o stratum+tcp://lyra2v2.mine.zpool.ca:4533     -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a myr-gr     -b 4074 -p $P      -d 0 -o stratum+tcp://myr-gr.mine.zpool.ca:5433      -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a neoscrypt  -b 4075 -p $P      -d 0 -o stratum+tcp://neoscrypt.mine.zpool.ca:4233   -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a lyra2v2    -b 4073 -p $P,d=$d -d 0 -o stratum+tcp://lyra2v2.mine.zpool.ca:4533     -q -u $ADDR -r 0 &
+  ./ccminer -a myr-gr     -b 4074 -p $P      -d 0 -o stratum+tcp://myr-gr.mine.zpool.ca:5433      -q -u $ADDR -r 0 &
+  ./ccminer -a neoscrypt  -b 4075 -p $P      -d 0 -o stratum+tcp://neoscrypt.mine.zpool.ca:4233   -q -u $ADDR -r 0 &
   d=0.5
-  ./ccminer -a nist5      -b 4076 -p $P,d=$d -d 0 -o stratum+tcp://nist5.mine.zpool.ca:3833       -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a nist5      -b 4076 -p $P,d=$d -d 0 -o stratum+tcp://nist5.mine.zpool.ca:3833       -q -u $ADDR -r 0 &
   d=0.096
-  ./ccminer -a phi        -b 4077 -p $P,d=$d -d 0 -o stratum+tcp://phi.mine.zpool.ca:8333         -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a polytimos  -b 4078 -p $P      -d 0 -o stratum+tcp://polytimos.mine.zpool.ca:8463   -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a quark      -b 4079 -p $P      -d 0 -o stratum+tcp://quark.mine.zpool.ca:4033       -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a qubit      -b 4080 -p $P      -d 0 -o stratum+tcp://qubit.mine.zpool.ca:4733       -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a phi        -b 4077 -p $P,d=$d -d 0 -o stratum+tcp://phi.mine.zpool.ca:8333         -q -u $ADDR -r 0 &
+  ./ccminer -a polytimos  -b 4078 -p $P      -d 0 -o stratum+tcp://polytimos.mine.zpool.ca:8463   -q -u $ADDR -r 0 &
+  ./ccminer -a quark      -b 4079 -p $P      -d 0 -o stratum+tcp://quark.mine.zpool.ca:4033       -q -u $ADDR -r 0 &
+  ./ccminer -a qubit      -b 4080 -p $P      -d 0 -o stratum+tcp://qubit.mine.zpool.ca:4733       -q -u $ADDR -r 0 &
   d=0.024
-  ./ccminer -a sib        -b 4081 -p $P,d=$d -d 0 -o stratum+tcp://sib.mine.zpool.ca:5033         -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a sib        -b 4081 -p $P,d=$d -d 0 -o stratum+tcp://sib.mine.zpool.ca:5033         -q -u $ADDR -r 0 &
   d=0.898
-  ./ccminer -a skein      -b 4082 -p $P,d=$d -d 0 -o stratum+tcp://skein.mine.zpool.ca:4933       -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a skein      -b 4082 -p $P,d=$d -d 0 -o stratum+tcp://skein.mine.zpool.ca:4933       -q -u $ADDR -r 0 &
   d=0.15
-  ./ccminer -a skunk      -b 4083 -p $P,d=$d -d 0 -o stratum+tcp://skunk.mine.zpool.ca:8433       -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a skunk      -b 4083 -p $P,d=$d -d 0 -o stratum+tcp://skunk.mine.zpool.ca:8433       -q -u $ADDR -r 0 &
   d=36
-  ./ccminer -a timetravel -b 4084 -p $P,d=$d -d 0 -o stratum+tcp://timetravel.mine.zpool.ca:3555  -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a timetravel -b 4084 -p $P,d=$d -d 0 -o stratum+tcp://timetravel.mine.zpool.ca:3555  -q -u $ADDR -r 0 &
   d=0.374
-  ./ccminer -a tribus     -b 4085 -p $P,d=$d -d 0 -o stratum+tcp://tribus.mine.zpool.ca:8533      -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a tribus     -b 4085 -p $P,d=$d -d 0 -o stratum+tcp://tribus.mine.zpool.ca:8533      -q -u $ADDR -r 0 &
   d=0.128
-  ./ccminer -a veltor     -b 4086 -p $P,d=$d -d 0 -o stratum+tcp://veltor.mine.zpool.ca:5034      -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a x11evo     -b 4087 -p $P      -d 0 -o stratum+tcp://x11evo.mine.zpool.ca:3553      -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a x11        -b 4088 -p $P      -d 0 -o stratum+tcp://x11.mine.zpool.ca:3533         -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a x13        -b 4089 -p $P      -d 0 -o stratum+tcp://x13.mine.zpool.ca:3633         -q -u $BTC_ADDR -r 0 &
-  ./ccminer -a x14        -b 4090 -p $P      -d 0 -o stratum+tcp://x14.mine.zpool.ca:3933         -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a veltor     -b 4086 -p $P,d=$d -d 0 -o stratum+tcp://veltor.mine.zpool.ca:5034      -q -u $ADDR -r 0 &
+  ./ccminer -a x11evo     -b 4087 -p $P      -d 0 -o stratum+tcp://x11evo.mine.zpool.ca:3553      -q -u $ADDR -r 0 &
+  ./ccminer -a x11        -b 4088 -p $P      -d 0 -o stratum+tcp://x11.mine.zpool.ca:3533         -q -u $ADDR -r 0 &
+  ./ccminer -a x13        -b 4089 -p $P      -d 0 -o stratum+tcp://x13.mine.zpool.ca:3633         -q -u $ADDR -r 0 &
+  ./ccminer -a x14        -b 4090 -p $P      -d 0 -o stratum+tcp://x14.mine.zpool.ca:3933         -q -u $ADDR -r 0 &
   d=0.064
-  ./ccminer -a x17        -b 4091 -p $P,d=$d -d 0 -o stratum+tcp://x17.mine.zpool.ca:3737         -q -u $BTC_ADDR -r 0 &
+  ./ccminer -a x17        -b 4091 -p $P,d=$d -d 0 -o stratum+tcp://x17.mine.zpool.ca:3737         -q -u $ADDR -r 0 &
   wait
   echo "==========================="
   echo "===== SWITCHING MINER ====="
